@@ -49,3 +49,14 @@ Fuzzgoat was adapted from udp/json-parser - we chose it because:
 * The code is clean and very readable.
 
 Fuzz Stati0n would like to thank the creators and maintainers of udp/json-parser. 
+# 513558007 - 模糊測試專題進度 (Week 7)
+
+## 目前進度
+- [x] AFL++ 容器環境佈署成功 (Podman/Docker)
+- [x] Fuzzgoat 原始碼插樁編譯完成 (afl-clang-fast)
+- [x] AddressSanitizer (ASan) 版本編譯完成
+
+## 編譯指令紀錄
+```bash
+# 手動插樁指令
+afl-clang-fast -o fuzzgoat -I. main.c fuzzgoat.c -lm
