@@ -1,0 +1,122 @@
+期末專案簡報可能提問與簡答
+學生：513558007
+
+1. 老師問：你原本說 63 個樣本，為什麼報告變成 65 個？
+簡答：
+我重新檢查 GitHub repository 的 out/default/crashes/ 目錄後，實際有 65 個 id:* crash files。為了讓 final report 完整，所以我改成分析 GitHub 上全部 65 個樣本，沒有排除任何樣本。
+
+2. 老師問：你有真的跑每一個 crash sample 嗎？
+簡答：
+有。我在 WSL/Linux 環境中逐一執行 fuzzgoat_ASAN <sample>，並記錄每個樣本的 AddressSanitizer 類型、signal、size、exit code、SHA-256、stack trace 和 source location。
+
+3. 老師問：為什麼要用 WSL/Linux，不直接在 Windows 分析？
+簡答：
+因為 AFL++ 產生的 crash 檔名包含冒號，例如 sig:06 和 time:...。這種檔名在 Linux 可以存在，但 Windows 檔案系統無法正常 checkout，所以我改到 WSL/Linux clone repository 並分析。
+
+4. 老師問：AddressSanitizer 是做什麼用的？
+簡答：
+AddressSanitizer 是記憶體錯誤偵測工具，可以在程式執行時偵測 heap-buffer-overflow、heap-use-after-free、invalid-free 等問題，並輸出錯誤類型與 stack trace，幫助定位 root cause。
+
+5. 老師問：為什麼還需要 addr2line？
+簡答：
+這次 AddressSanitizer 輸出中有 binary offset，但 source line 不完整。因此我用 addr2line 將 fuzzgoat_ASAN 的 offset 轉回原始碼位置，例如 main.c:150 或 fuzzgoat.c:85，讓分析可以對應到實際程式碼。
+
+6. 老師問：65 個 crash samples 是 65 個不同漏洞嗎？
+簡答：
+不是。fuzzing 常常會產生很多不同輸入，但它們可能觸發同一個 vulnerable path。這次 65 個樣本最後可以歸納成 4 類漏洞與 5 個主要 stack groups。
+
+7. 老師問：主要分類結果是什麼？
+簡答：
+總共分成四類：heap-buffer-overflow 有 39 個，heap-use-after-free 有 16 個，invalid-free / bad-free 有 9 個，segmentation-fault 有 1 個。
+
+8. 老師問：最多的是哪一類？原因是什麼？
+簡答：
+最多的是 heap-buffer-overflow，共 39 個。主要集中在 main.c:150，原因是程式只配置 file_size 大小的 buffer，卻把它當 C 字串用 %s 輸出，缺少 NUL 結尾，因此可能越界讀取。
+
+9. 老師問：id:000003 的 root cause 是什麼？
+簡答：
+id:000003 是 heap-buffer-overflow。main.c 配置 file_size bytes 後，沒有多配置一個 byte 放 NUL terminator，卻直接 printf("%s\n", file_contents)，導致 printf 讀超出 heap buffer。
+
+10. 老師問：id:000000 的 root cause 是什麼？
+簡答：
+id:000000 是 invalid-free / bad-free。AddressSanitizer 顯示 attempting free on address which was not malloc()-ed，主要位置是 default_free at fuzzgoat.c:85，表示程式嘗試 free 一個不是合法 malloc 起始位址的指標。
+
+11. 老師問：heap-use-after-free 的代表樣本是哪個？
+簡答：
+代表樣本是 id:000014。它主要定位在 json_parse_ex at fuzzgoat.c:643，和 Fuzzgoat 內建的 free(*top) 漏洞路徑有關，程式釋放 heap 物件後仍繼續使用它。
+
+12. 老師問：id:000016 為什麼也是 heap-buffer-overflow，但跟 main.c:150 不同？
+簡答：
+id:000016 的主要位置在 fuzzgoat.c:258。這裡 object free path 使用 value->u.object.length--，會先取用原本的 length 再遞減，造成 object values 越界存取。它跟 main.c:150 那群屬於不同 stack group。
+
+13. 老師問：唯一的 segmentation-fault 是哪個樣本？
+簡答：
+是 id:000027。它定位在 json_value_free at fuzzgoat.c:224，推測是前面記憶體狀態已經被破壞，進入釋放流程後讀取不合法位置，最後觸發 SEGV。
+
+14. 老師問：你怎麼判斷 crash 是否屬於同一類？
+簡答：
+我先看 AddressSanitizer error type，再看 top source-level stack location。如果錯誤類型相同且主要 source location 相同，就歸在同一個 stack group。
+
+15. 老師問：為什麼報告不是逐一分析 65 段？
+簡答：
+因為很多樣本是不同輸入觸發同一個 root cause。逐一寫 65 段會重複且不利於理解，所以我用分類表保留全部樣本，再挑代表樣本做深入 root cause analysis。
+
+16. 老師問：這個專案中 GitHub activity 的重點是什麼？
+簡答：
+主要有兩個學生提交。一個是更新 README 記錄 AFL++ 和 AddressSanitizer 建置進度，另一個是上傳 65 個 crash samples 與 fuzzgoat_ASAN，讓實驗結果可重現。
+
+17. 老師問：AFL++ 在這個專案扮演什麼角色？
+簡答：
+AFL++ 負責 coverage-guided fuzzing，也就是根據執行覆蓋率引導輸入變異，產生能觸發不同程式路徑與 crash 的測試樣本。
+
+18. 老師問：Fuzzgoat 是真實漏洞專案嗎？
+簡答：
+Fuzzgoat 是故意放入漏洞的練習專案，不是我發現真實產品的新漏洞。它適合用來練習 fuzzing、crash triage 和 root cause analysis。
+
+19. 老師問：如果要修 main.c:150 的問題，你會怎麼修？
+簡答：
+可以配置 file_size + 1 bytes，讀入後補上 file_contents[file_size] = '\0'，或者避免用 %s 處理非 NUL 結尾 buffer，改用明確長度輸出。
+
+20. 老師問：如果要修 fuzzgoat.c:258 的問題，你會怎麼修？
+簡答：
+應該把 value->u.object.length-- 改成 --value->u.object.length，先遞減後再取值，避免用超出邊界的 index 存取 object values。
+
+21. 老師問：如果修完漏洞，你會怎麼驗證？
+簡答：
+我會用同一批 65 個 crash samples 做 regression test，確認原本會觸發的 AddressSanitizer 錯誤不再出現。另外也可以用 afl-tmin 最小化代表樣本後加入 regression corpus。
+
+22. 老師問：你這次的最大收穫是什麼？
+簡答：
+我學到 fuzzing 不是只看有多少 crashes，而是要把 crash corpus 轉成可重現的證據，並透過 AddressSanitizer、addr2line 和分類方法找到真正的 root causes。
+
+23. 老師問：你覺得這份分析還可以改進什麼？
+簡答：
+可以進一步使用 afl-tmin 最小化每個代表樣本，並修補程式後重新執行 fuzzing 和 regression test，確認修補是否完整。
+
+24. 老師問：為什麼 sig:06 和 sig:11 都會出現？
+簡答：
+sig:06 通常對應 abort，例如 AddressSanitizer 偵測到錯誤後主動中止。sig:11 通常是 segmentation fault，代表程式讀寫非法記憶體位址。
+
+25. 老師問：你如何保存分析結果？
+簡答：
+我輸出了 crash_analysis.csv 和 crash_analysis.json。CSV 適合快速查看 65 個樣本分類，JSON 保留更完整的 replay result、stack frames、source locations 和 summary。
+
+26. 老師問：這個專案跟軟體測試或程式安全的關聯是什麼？
+簡答：
+它結合了自動化測試與安全分析。AFL++ 自動產生測試輸入，AddressSanitizer 偵測記憶體錯誤，最後透過 root cause analysis 把 crash 轉成可修補的程式問題。
+
+27. 老師問：如果時間只夠講一個漏洞，你會講哪個？
+簡答：
+我會講 main.c:150 的 heap-buffer-overflow，因為它是數量最多的一群，根因也很清楚：buffer 沒有 NUL 結尾卻用 %s 當 C 字串輸出。
+
+28. 老師問：你的報告中最重要的證據是什麼？
+簡答：
+最重要的是 65 個樣本的 replay 結果，以及每個 crash 對應的 AddressSanitizer 類型和 source location。這些證據顯示分析不是只靠截圖，而是可以重現與查核。
+
+29. 老師問：為什麼要做 SHA-256？
+簡答：
+SHA-256 可以作為每個 crash input 的識別值，避免之後檔名改變或複製時混淆，也方便確認樣本內容是否一致。
+
+30. 老師問：你覺得 final report 和 progress report 最大差別是什麼？
+簡答：
+progress report 主要說明環境建置與初步結果；final report 則進一步逐一 replay 全部 crash samples，完成分類統計、source location 對應與代表樣本 root cause analysis。
