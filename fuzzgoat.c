@@ -82,7 +82,8 @@ static void * default_alloc (size_t size, int zero, void * user_data)
 
 static void default_free (void * ptr, void * user_data)
 {
-   free (ptr);
+   if (ptr)
+      free (ptr);
 }
 
 static void * json_alloc (json_state * state, unsigned long size, int zero)
@@ -134,7 +135,7 @@ static int new_value (json_state * state,
 	Triggers   - Use after free in json_value_free()
 ******************************************************************************/
 
-               free(*top);
+               /* Patch: do not free *top here; it is still used by the parser. */
 /****** END vulnerable code **************************************************/
 
                break;
@@ -255,7 +256,7 @@ void json_value_free_ex (json_settings * settings, json_value * value)
   Triggers   - Invalid free in the above if-statement
 ******************************************************************************/
 
-            value = value->u.object.values [value->u.object.length--].value;
+            value = value->u.object.values [--value->u.object.length].value;
 /****** END vulnerable code **************************************************/
 
             continue;
@@ -275,9 +276,7 @@ void json_value_free_ex (json_settings * settings, json_value * value)
   Triggers   - Invalid free on decremented value->u.string.ptr
 ******************************************************************************/
 
-            if (!value->u.string.length){
-              value->u.string.ptr--;
-            }
+            /* Patch: keep string.ptr at the allocated base address. */
 /****** END vulnerable code **************************************************/
 
 
@@ -293,10 +292,7 @@ void json_value_free_ex (json_settings * settings, json_value * value)
   Triggers   - NULL pointer dereference
 ******************************************************************************/
 
-            if (value->u.string.length == 1) {
-              char *null_pointer = NULL;
-              printf ("%d", *null_pointer);
-            }
+            /* Patch: do not intentionally dereference a NULL pointer. */
 /****** END vulnerable code **************************************************/
 
             settings->mem_free (value->u.string.ptr, settings->user_data);

@@ -86,6 +86,49 @@ AddressSanitizer replay 與 source-level root cause analysis。
 - `crash_analysis.csv`：65 個 crash samples 的分類摘要表
 - `crash_analysis.json`：完整 replay 結果、stack frames 與 source locations
 - `analyze_crashes_wsl.py`：逐一 replay crash samples 並產生分析輸出的腳本
+- `regression_test_crash_corpus.py`：使用原 65 個 crash samples 驗證修補結果的回歸測試腳本
+- `regression_after_patch.csv`：修補後 65 個樣本的回歸測試摘要表
+- `regression_after_patch.json`：修補後完整回歸測試結果
 
 依照提交整理需求，GitHub final records 僅保留分析資料與分析腳本；PDF、PPT、Markdown 報告檔與簡報練習文字稿不放入 repository。
+
+## Vulnerability Fixes and Regression Testing
+
+This branch patches the crash root causes identified from the final AFL++ crash
+corpus analysis and validates the fixes with the original 65 crash samples.
+
+### Patched root causes
+
+- `main.c:150`: allocate `file_size + 1` bytes and append a `NUL` terminator
+  before printing file contents as a C string.
+- `fuzzgoat.c:137`: remove the premature `free(*top)` path that caused
+  downstream use-after-free behavior.
+- `fuzzgoat.c:258`: change `value->u.object.length--` to
+  `--value->u.object.length` to avoid indexing one element past the object
+  values array.
+- `fuzzgoat.c:276`: keep `value->u.string.ptr` at the allocated base address
+  instead of decrementing it for empty strings.
+- `fuzzgoat.c:293`: remove the intentional NULL pointer dereference for
+  one-byte strings.
+- `fuzzgoat.c:85`: add a defensive NULL guard in `default_free`.
+
+`fuzzgoat.c:224` was treated as a downstream crash site. The practical fix is
+to remove the upstream memory corruption sources rather than adding unreliable
+pointer-validity checks in C.
+
+### Regression result
+
+Regression testing re-ran the original GitHub crash corpus:
+
+- Total crash samples: 65
+- Passed: 65
+- Failed: 0
+- AddressSanitizer errors after patch: 0
+- Signal crashes after patch: 0
+
+Generated files:
+
+- `final_project_records/regression_test_crash_corpus.py`
+- `final_project_records/regression_after_patch.csv`
+- `final_project_records/regression_after_patch.json`
 

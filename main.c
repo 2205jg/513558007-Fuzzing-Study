@@ -126,7 +126,7 @@ int main(int argc, char** argv)
                 return 1;
         }
         file_size = filestatus.st_size;
-        file_contents = (char*)malloc(filestatus.st_size);
+        file_contents = (char*)malloc((size_t)file_size + 1);
         if ( file_contents == NULL) {
                 fprintf(stderr, "Memory error: unable to allocate %d bytes\n", file_size);
                 return 1;
@@ -146,6 +146,7 @@ int main(int argc, char** argv)
                 return 1;
         }
         fclose(fp);
+        file_contents[file_size] = '\0';
 
         printf("%s\n", file_contents);
 
