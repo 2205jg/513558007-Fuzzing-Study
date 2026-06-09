@@ -87,5 +87,5 @@ AddressSanitizer replay 與 source-level root cause analysis。
 - `crash_analysis.json`：完整 replay 結果、stack frames 與 source locations
 - `analyze_crashes_wsl.py`：逐一 replay crash samples 並產生分析輸出的腳本
 
-依照提交整理需求，GitHub final records 僅保留分析資料與分析腳本；PDF、PPT、Markdown 報告檔與簡報練習文字稿不放入 repository。
+
 
