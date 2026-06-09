@@ -86,9 +86,6 @@ AddressSanitizer replay 與 source-level root cause analysis。
 - `crash_analysis.csv`：65 個 crash samples 的分類摘要表
 - `crash_analysis.json`：完整 replay 結果、stack frames 與 source locations
 - `analyze_crashes_wsl.py`：逐一 replay crash samples 並產生分析輸出的腳本
-- `513558007_finalproject_presentation_script.txt`：10 分鐘簡報練習文字稿
-- `513558007_pdf_page_speech_script.txt`：依 PDF 每頁設計的逐頁演講稿
-- `513558007_finalproject_QA.txt`：老師可能提問與簡答
 
-依照提交整理需求，PDF、PPT 與 Markdown 報告檔不放入 GitHub final records。
+依照提交整理需求，GitHub final records 僅保留分析資料與分析腳本；PDF、PPT、Markdown 報告檔與簡報練習文字稿不放入 repository。
 
