@@ -89,6 +89,7 @@ AddressSanitizer replay 與 source-level root cause analysis。
 - `regression_test_crash_corpus.py`：使用原 65 個 crash samples 驗證修補結果的回歸測試腳本
 - `regression_after_patch.csv`：修補後 65 個樣本的回歸測試摘要表
 - `regression_after_patch.json`：修補後完整回歸測試結果
+- `513558007_vulnerability_fix_and_regression_test.md`：漏洞修補與回歸測試中文說明
 
 依照提交整理需求，GitHub final records 僅保留分析資料與分析腳本；PDF、PPT、Markdown 報告檔與簡報練習文字稿不放入 repository。
 
